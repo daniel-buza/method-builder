@@ -1,13 +1,11 @@
 # Method builder with Lombok @Builder
 
-[[_TOC_]]
-
 ## Overview
 
 In this tutorial we are going to explore the possibilities of generating 
 method builders with [Lombok](https://projectlombok.org)'s 
 [@Builder](https://projectlombok.org/features/Builder) annotation. 
-The challenge is to provide a flexible way of calling a given method 
+The aim is to improve usability by providing a flexible way of calling a given method 
 even if it has a lot of parameters.
 
 ## @Builder on simple methods
@@ -21,13 +19,14 @@ void method(@NotNull String firstParam, @NotNull String secondParam,
     ...            
 }
 ```
-This method could be called in many various way, a few examples:
+If the parameters which are not marked as not null are optional, the method might accept all the following calls:
 ```
 method("A", "B", null, null, null, new Object());
 method("A", "B", "C", null, 2L, "D");
 method("A", "B", null, null, 3L, this);
+...
 ```
-This example already show some problematic points such as:
+This example already shows some problematic points such as:
 - the caller should know which parameter is which (e.g. in order to change 
   the first call to provide a Long too, the caller must know Long is expected 
   to be the fifth parameter)
@@ -44,7 +43,7 @@ void method(@NotNull String firstParam, @NotNull String secondParam, String thir
 ...
 ```
 
-To achieve better usability and avoid boilerplate code method builders can be 
+To achieve better usability and avoid boilerplate code, method builders could be 
 introduced. Project Lombok already provides an annotation in order to make usage 
 of builders simple. The example method above could be annotated in the 
 following way:
@@ -80,14 +79,14 @@ methodBuilder()
         .call();
 ```
 
-Thus the method call is much easier to understand and change later.
-Some additional information:
+In this way, the method call is much easier to understand and change later.
+Some remarks:
 - by default, a builder method (method to obtain a builder instance) on a static method, is going be itself also a static method.
 - by default, the call() method will have the same throw signature as the original method
 
 ### Default values
 
-In many cases it can be really helpful to define default values for the input parameters. Unlike some other languages (for example c++) JAVA does not have a language element to support this need. 
+In many cases it can be really helpful to define default values for the input parameters. Unlike some other languages JAVA does not have a language element to support this need. 
 Therefore, in most of the cases this is reached via method overloading having structures like:
 ```
 method() { method("Hello"); }
@@ -97,11 +96,11 @@ method(String a, String b, String c) {
   ... acutal logic here ...
 }
 ```
-While using lombok builders a builder class is going to be created within the target class. This builder class:
-- has as many properties as many arguments the method had
+While using lombok builders, a builder class is going to be generated within the target class. This builder class:
+- has as many properties as many arguments the method has
 - has setters for its arguments
 
-It is also possible to define the class manually, which also gives the possibility to define the default values for the parameters.
+It is also possible to define the class manually, which also gives the possibility to define default values for the parameters.
 In this way the method above would look like:
 
 ```
@@ -116,7 +115,7 @@ private class MethodBuilder {
     private String c = "world!";
 }
 ```
-With this addition, if the caller does not specify one parameter, the default value defined in the builder class is going to be used.
+With this addition, if the caller does not specify a parameter, the default value defined in the builder class is going to be used.
 
 Remark: in this case we do not have to declare all the input parameters of the method in the class. If an input parameter of the method
 is not present in the class, Lombok will generate an additional property accordingly.
@@ -127,13 +126,13 @@ It is a common need, to define the return type of a given method trough one of t
 ```
 public <T> T read(byte[] content, Class<T> type) {...}
 ```
-In this case, the builder class will also be a typed class, but the builder method will create an instance without a bound type.
+In this case, the builder class will also be a typed class, but the builder method will create an instance without a bounded type.
 Take a look on the following example:
 ```
 @Builder(builderMethodName = "methodBuilder", buildMethodName = "call", builderClassName = "MethodBuilder")
 public <T> T read(byte[] content, Class<T> type) {...}
 ```
-In this case, methodBuilder method is going to create an instance of MethodBuilder without any type parameters. 
+In this case, methodBuilder method is going to create an instance of MethodBuilder without bounded type parameters. 
 This leads to the fact, that the following code will not compile (as required would be `Class<T>`, provided is `Class<String>`):
 ```
 methodBuilder()
@@ -148,7 +147,8 @@ methodBuilder()
     .type((Class)String.class)
     .call();
 ```
-It will compile, but there is another aspect to mention: the return type of call method is not going to be String in this case, but still T. Therefore, the client have to cast the return type, like:
+It will compile, but there is another aspect to mention: the return type of call method is not going to be String in this case, but still unbound T.
+Therefore, the client have to cast the return type, like:
 ```
 String result = (String)methodBuilder()
     .content(new byte[]{})
@@ -156,7 +156,7 @@ String result = (String)methodBuilder()
     .call();
 ```
 This solution works, but it also requires the caller to cast both the input and the result. 
-As the aim is to provide a caller-friendly way to invoke the methods, it is recommended to consider one of the two following options.
+As the original motivation is to provide a caller-friendly way to invoke the methods, it is recommended to consider one of the two following options.
 
 #### Override the builder method
 
@@ -166,7 +166,7 @@ method in the class and create an instance of the builder class with the desired
 
 ```
 @Builder(builderMethodName = "methodBuilder", buildMethodName = "call", builderClassName = "MethodBuilder")
-public <T> T read(final byte[] content, final Class<T> type) {...}
+public <T extends Collection> T read(final byte[] content, final Class<T> type) {...}
 
 public <T extends Collection> MethodBuilder<T> methodBuilder(final Class<T> type) {
     return new MethodBuilder<T>().type(type);
@@ -180,22 +180,37 @@ public class MethodBuilder<T extends Collection> {
 ```
 In this case the caller does not have to cast anytime and the call looks like:
 ```
-String result = methodBuilder(String.class)
+List result = methodBuilder(List.class)
     .content(new byte[]{})
     .call();
 ```
 
 #### Casting in the setter
 
+It is also possible to cast the builder instance within the setter of the type parameter:
 
+```
+@Builder(builderMethodName = "methodBuilder", buildMethodName = "call", builderClassName = "MethodBuilder")
+public <T extends Collection> T read(final byte[] content, final Class<T> type) {...}
+
+public class MethodBuilder<T extends Collection> {
+    private Class<T> type;
+    public <L extends Collection> MethodBuilder<L> type(final Class<L> type) { 
+        this.type = (Class)type; 
+        return (MethodBuilder<L>) this;
+    }
+    public T call() { return read(content, type); }
+}
+```
+
+Using this way, there is no need to define the builder method manually and from the callers' perspective the type parameter is handed over just as any other parameter.
 
 ## Conclusion
 
 By using @Builder on methods can bring the following advantages:
 - More flexibility on the callers side
 - Default input values without method overloads
-- Less boilerplate code for overrides
 - Improved readability of the method calls
 - Allowing fire similar calls via the same builder instance
 
-In the meantime is also worth to mention that in some cases, using method builders can bring unnecessary complexity.
+In the meantime is also worth to mention that in some cases, using method builders can bring unnecessary complexity on the providers' side.
