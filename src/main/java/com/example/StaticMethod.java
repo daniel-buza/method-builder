@@ -1,4 +1,4 @@
-package com.baeldung.example;
+package com.example;
 
 import lombok.Builder;
 

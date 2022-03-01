@@ -1,15 +1,14 @@
-package com.baeldung.example;
+package com.example;
 
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class TypedMethod2Test {
+public class TypedMethod1Test {
 
-    private static final TypedMethod2 CLASS_INSTANCE = new TypedMethod2();
+    private static final TypedMethod1 CLASS_INSTANCE = new TypedMethod1();
 
     @Test
     public void testMethodCall() {
@@ -18,14 +17,12 @@ public class TypedMethod2Test {
                 null, null, "SixthInput",
                 ArrayList.class);
 
-        final ArrayList builderCallResult = CLASS_INSTANCE.typedMethodBuilder()
-                .type(LinkedList.class)
+        final ArrayList builderCallResult = CLASS_INSTANCE.typedMethodBuilder(ArrayList.class)
                 .inputFirst("firstInput")
                 .inputThird("3rdInput")
                 .inputSixth("SixthInput")
-                .type(ArrayList.class)
                 .call();
-        
+
         assertEquals(plainCallResult, builderCallResult);
     }
 

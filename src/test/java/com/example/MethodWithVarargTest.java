@@ -1,22 +1,22 @@
-package com.baeldung.example;
+package com.example;
 
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class SimpleMethodTest {
+public class MethodWithVarargTest {
 
-    private static final SimpleMethod CLASS_INSTANCE = new SimpleMethod();
+    private static final MethodWithVararg CLASS_INSTANCE = new MethodWithVararg();
 
     @Test
     public void testMethodCall() {
         final String plainCallResult = CLASS_INSTANCE.simpleMethod(
                 "firstInput", null, "3rdInput",
-                null, null, "SixthInput");
+                null, null, "SixthInput_1", "SixthInput_2");
         final String builderCallResult = CLASS_INSTANCE.simpleMethodBuilder()
                 .inputFirst("firstInput")
                 .inputThird("3rdInput")
-                .inputSixth("SixthInput")
+                .inputSixth(new String[]{"SixthInput_1", "SixthInput_2"})
                 .call();
         assertEquals(plainCallResult, builderCallResult);
     }
